@@ -1,0 +1,17 @@
+/**
+ * ฟังก์ชันหลักในการแสดงผลหน้าเว็บ
+ */
+function doGet() {
+  return HtmlService.createTemplateFromFile('index')
+    .evaluate()
+    .setTitle('AUTRANS Form Generator')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/**
+ * ฟังก์ชันเสริมสำหรับดึงปีปัจจุบัน
+ */
+function getAppYear() {
+  return new Date().getFullYear();
+}

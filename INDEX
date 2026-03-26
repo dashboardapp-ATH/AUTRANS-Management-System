@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <base target="_top">
+    <title>AUTRANS Dashboard System</title>
+    
+    <!-- สร้าง ICON รูปทรงรถบรรทุกสีฟ้าโดยใช้ SVG Data URL เพื่อแสดงผลแทนรูปเดิมตามที่ต้องการ -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%233b82f6%22><path d=%22M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z%22/></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Sarabun', sans-serif;
+            -webkit-print-color-adjust: exact;
+        }
+
+        /* --- สไตล์ตัวอักษร AUTRANS ตามรูปภาพ --- */
+        .autrans-logo {
+            color: #8289cf;
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        /* การตั้งค่าสำหรับการพิมพ์ A4 */
+        @media print {
+            @page {
+                size: A4;
+                margin: 0;
+            }
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                background: white !important;
+            }
+            .no-print, .sidebar {
+                display: none !important;
+            }
+            .main-content {
+                margin-left: 0 !important;
+                padding: 0 !important;
+            }
+            .print-area {
+                width: 210mm;
+                height: 297mm;
+                margin: 0 !important;
+                padding: 8mm 10mm !important;
+                box-shadow: none !important;
+                background: white !important;
+                overflow: visible !important;
+                position: relative;
+            }
+            
+            /* การจัดหน้าสำหรับป้ายรูท (แบ่ง 2 ต่อหน้า) */
+            .route-print-page {
+                height: 297mm;
+                padding: 5mm 10mm !important;
+                display: flex !important;
+                flex-direction: column;
+                justify-content: space-between;
+                page-break-after: always;
+            }
+            
+            .route-box {
+                height: 138mm !important; 
+                border: 6px solid black !important;
+                margin-bottom: 0 !important;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                table-layout: fixed;
+            }
+            th, td {
+                border: 1px solid black !important;
+                padding: 0px 2px !important; 
+                font-size: 10px !important;
+                vertical-align: bottom !important; 
+            }
+            th {
+                vertical-align: middle !important;
+                height: 26px;
+                background-color: #f3f4f6 !important;
+            }
+        }
+
+        /* โครงสร้าง UI หน้าจอ */
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background-color: #0f172a; /* slate-900 */
+            color: white;
+            z-index: 50;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 1.5rem;
+            min-height: 100vh;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+
+        .nav-item {
+            padding: 0.875rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #94a3b8;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-item:hover {
+            background-color: #1e293b;
+            color: white;
+        }
+
+        .nav-item.active {
+            background-color: #1e293b;
+            border-left-color: #3b82f6;
+            color: white;
+        }
+
+        /* สไตล์ปุ่มย้อนกลับ */
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            transition: all 0.2s;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+        .btn-back:hover {
+            color: #3b82f6;
+            transform: translateX(-4px);
+        }
+
+        /* พื้นที่พรีวิวเอกสาร */
+        .print-area {
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin: 0 auto;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 10mm;
+            box-sizing: border-box;
+            display: none; 
+        }
+
+        /* สไตล์ป้ายรูท (ตามรูป image_7b48c3.png) */
+        .route-box {
+            border: 8px solid black;
+            height: 135mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 5mm;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .route-month-text {
+            font-size: 80px; 
+            font-weight: 900;
+            line-height: 1;
+            margin: 0;
+            text-transform: uppercase;
+        }
+        .route-name-text {
+            font-size: 170px; /* ลดจาก 260px เพื่อป้องกันตัวหนังสือล้นหน้ากระดาษ */
+            font-weight: 900;
+            line-height: 1;
+            margin-top: 5px;
+            text-transform: uppercase;
+            white-space: nowrap; /* ป้องกันการขึ้นบรรทัดใหม่ */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid #000;
+            text-align: center;
+            font-size: 11px;
+            padding: 0px 4px;
+            vertical-align: bottom; 
+        }
+        th {
+            vertical-align: middle;
+            background-color: #f3f4f6;
+            height: 30px;
+        }
+        .checkbox-custom {
+            width: 14px;
+            height: 14px;
+            border: 1px solid black;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 4px;
+            text-align: center;
+            line-height: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .iframe-container {
+            width: 100%;
+            height: calc(100vh - 8rem);
+            border: none;
+            background: white;
+        }
+
+        .dashboard-card {
+            transition: all 0.3s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+        
+        .hidden { display: none; }
+        
+        .route-item-badge {
+            background: #e2e8f0;
+            padding: 4px 12px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-900">
+
+    <!-- แถบเมนูด้านซ้าย (Sidebar) -->
+    <aside class="sidebar no-print">
+        <div class="p-8 mb-6">
+            <h1 class="text-4xl autrans-logo">AUTRANS</h1>
+            <p class="text-slate-500 text-[10px] uppercase tracking-[0.2em] mt-1 font-bold">Management System</p>
+        </div>
+        
+        <nav class="flex flex-col">
+            <div id="menu-dashboard" onclick="switchPage('dashboard')" class="nav-item active">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                <span>หน้าหลัก (Dashboard)</span>
+            </div>
+            <div id="menu-record" onclick="switchPage('recordForm')" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <span>บันทึกข้อมูลสินค้า</span>
+            </div>
+            <div id="menu-extra" onclick="switchPage('extraPage')" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span>ป้ายรูท/Extraหน้ารถ</span>
+            </div>
+            <div id="menu-truck" onclick="switchPage('external', 'truckCard')" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                <span>Truck card</span>
+            </div>
+            <div id="menu-express" onclick="switchPage('external', 'expressway')" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <span>ปะหน้าทางด่วน</span>
+            </div>
+            <div id="menu-seal" onclick="switchPage('external', 'sealPrint')" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 11h.01M7 15h.01M13 7h.01M13 11h.01M13 15h.01M17 7h.01M17 11h.01M17 15h.01M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                <span>พิมพ์ใบซีล (Seal)</span>
+            </div>
+        </nav>
+        
+        <div class="absolute bottom-8 left-8 text-slate-600 text-[10px] font-bold uppercase tracking-tighter">
+            © 2026 AUTRANS THAILAND
+        </div>
+    </aside>
+
+    <!-- พื้นที่แสดงผลด้านขวา (Main Content) -->
+    <main class="main-content">
+        
+        <!-- ส่วนที่ 1: หน้า Dashboard -->
+        <div id="dashboard-content">
+            <div class="flex items-center justify-between mb-10 no-print">
+                <h2 class="text-3xl font-bold text-slate-800">ยินดีต้อนรับ</h2>
+                <div class="text-right">
+                    <p id="currentDateDisplay" class="text-slate-500 font-medium"></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 no-print">
+                <div onclick="switchPage('recordForm')" class="dashboard-card bg-white p-8 rounded-3xl border border-slate-200 cursor-pointer flex flex-col items-center text-center">
+                    <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">บันทึกข้อมูลสินค้า</h3>
+                    <p class="text-slate-400 text-sm">สร้างเอกสารบันทึกเวลาแยกรูทงาน</p>
+                </div>
+
+                <div onclick="switchPage('extraPage')" class="dashboard-card bg-white p-8 rounded-3xl border border-slate-200 cursor-pointer flex flex-col items-center text-center">
+                    <div class="w-16 h-16 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">ป้ายรูท/Extraหน้ารถ</h3>
+                    <p class="text-slate-400 text-sm">จัดการและพิมพ์ป้ายรูทงาน/Extra</p>
+                </div>
+
+                <div onclick="switchPage('external', 'truckCard')" class="dashboard-card bg-white p-8 rounded-3xl border border-slate-200 cursor-pointer flex flex-col items-center text-center">
+                    <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Truck card</h3>
+                    <p class="text-slate-400 text-sm">ไปที่ระบบจัดการ Truck card</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ส่วนที่ 2: หน้าบันทึกข้อมูลสินค้า -->
+        <div id="recordFormSection" class="hidden">
+            <button onclick="switchPage('dashboard')" class="btn-back no-print">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                ย้อนกลับ
+            </button>
+
+            <div class="no-print bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-8">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="w-full md:w-80">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">เลือกรูทงาน</label>
+                        <select id="routeSelect" class="w-full border-2 border-slate-100 p-3 rounded-xl bg-slate-50 font-bold text-slate-700 outline-none focus:border-blue-500 transition" onchange="updateForm()">
+                            <option value="Frame">Frame (S5, OBS)</option>
+                            <option value="Deck">Deck (SW)</option>
+                        </select>
+                    </div>
+                    <button onclick="window.print()" class="w-full md:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-10 rounded-xl shadow-lg transition flex items-center justify-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                        สั่งปริ้นเอกสาร (A4)
+                    </button>
+                </div>
+            </div>
+
+            <div id="printContainer" class="print-area" style="display: block;">
+                <div id="formTitle" class="text-center font-bold text-xl mb-4 uppercase tracking-tighter">บันทึกข้อมูลสินค้า</div>
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex flex-col">
+                        <span class="text-2xl autrans-logo">AUTRANS</span>
+                        <div class="text-sm font-bold text-slate-900 leading-none mt-1">(THAILAND) CO.,LTD</div>
+                    </div>
+                    <div class="text-md font-semibold">Date....../......./.......</div>
+                </div>
+                <div class="flex justify-between items-end mb-2">
+                    <div id="supporterSection" class="text-md leading-tight"></div>
+                    <div class="flex items-center gap-4 text-sm font-semibold whitespace-nowrap">
+                        <span id="opt-S5"><span class="checkbox-custom"></span> S5</span>
+                        <span id="opt-OBS"><span class="checkbox-custom"></span> OBS</span>
+                        <span id="opt-SW"><span class="checkbox-custom"></span> SW</span>
+                        <div id="shiftCheckboxes" class="flex items-center gap-4 border-l-2 border-slate-200 pl-4 ml-1">
+                            <span class="whitespace-nowrap"><span class="checkbox-custom"></span> Day shift</span>
+                            <span class="whitespace-nowrap"><span class="checkbox-custom"></span> Night shift</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-1">
+                    <table class="flex-1">
+                        <thead id="leftTableHeader"></thead>
+                        <tbody id="leftTableBody"></tbody>
+                    </table>
+                    <table class="flex-1">
+                        <thead id="rightTableHeader"></thead>
+                        <tbody id="rightTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ส่วนที่ 3: หน้า ป้ายรูท/Extra หน้ารถ -->
+        <div id="extraPageSection" class="hidden">
+            <button onclick="switchPage('dashboard')" class="btn-back no-print">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                ย้อนกลับ
+            </button>
+
+            <!-- แผงควบคุมสำหรับป้ายรูท -->
+            <div class="no-print bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">เลือกเดือน</label>
+                        <select id="monthSelect" class="w-full border-2 border-slate-100 p-2 rounded-lg bg-slate-50 font-bold" onchange="renderRouteSigns()">
+                            <option value="01">มกราคม (P01)</option>
+                            <option value="02">กุมภาพันธ์ (P02)</option>
+                            <option value="03" selected>มีนาคม (P03)</option>
+                            <option value="04">เมษายน (P04)</option>
+                            <option value="05">พฤษภาคม (P05)</option>
+                            <option value="06">มิถุนายน (P06)</option>
+                            <option value="07">กรกฎาคม (P07)</option>
+                            <option value="08">สิงหาคม (P08)</option>
+                            <option value="09">กันยายน (P09)</option>
+                            <option value="10">ตุลาคม (P10)</option>
+                            <option value="11">พฤศจิกายน (P11)</option>
+                            <option value="12">ธันวาคม (P12)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">เลือกป้ายที่ต้องการพิมพ์</label>
+                        <select id="printSelect" class="w-full border-2 border-slate-100 p-2 rounded-lg bg-slate-50 font-bold" onchange="renderRouteSigns()">
+                            <option value="all">พิมพ์ทั้งหมด</option>
+                            <option value="selected">เลือกบางป้าย...</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="window.print()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                            สั่งปริ้นป้าย (A4)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="border-t pt-4">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-3">จัดการรูทงาน (เพิ่ม-ลดได้ที่นี่)</label>
+                    <div id="routeManagerList" class="flex flex-wrap gap-2 mb-4">
+                        <!-- รูทงานจะถูกเรนเดอร์ที่นี่ -->
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="newRouteInput" placeholder="ใส่ชื่อรูทงานใหม่..." class="border-2 border-slate-100 p-2 rounded-lg bg-slate-50 flex-1">
+                        <button onclick="addRoute()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition">เพิ่มรูทงาน</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- พื้นที่แสดงผลป้ายสำหรับพิมพ์ -->
+            <div id="routePrintContainer">
+                <!-- หน้ากระดาษป้ายจะถูกสร้างที่นี่โดย JS -->
+            </div>
+        </div>
+
+        <!-- หน้าแอปพลิเคชันภายนอก (Iframe) -->
+        <div id="externalContentSection" class="hidden">
+            <button onclick="switchPage('dashboard')" class="btn-back no-print">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                ย้อนกลับ
+            </button>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center no-print">
+                    <span class="font-bold text-slate-600" id="iframeTitle">กำลังโหลด...</span>
+                </div>
+                <iframe id="appIframe" class="iframe-container"></iframe>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const APP_LINKS = {
+            sealPrint: "https://script.google.com/macros/s/AKfycbyD0iZ8PTZnB5mtuuWl1qA7TqSGSYi1wyENXr4_RpVsxUWDc-8g2ofvMi6D1l-NLmO4aw/exec", 
+            truckCard: "https://script.google.com/macros/s/AKfycbzytiatr82s4U_1j7CZwa4NLC19VgcA1Kjow05I73DwTk9yO8ak5VOI2b05nwFu6ei8Fg/exec",
+            expressway: "https://script.google.com/macros/s/AKfycbxXq2tJJIeIOG_6IEKQqUeKq1tbXHYLhjuL_AQKCAK938bU4k61jTA2LIzDmSyOR-uc/exec"
+        };
+
+        // ข้อมูลรูทงานเริ่มต้น
+        let routeList = [
+            "IP01-A", "IP01-B", "IP01-C", "IP01-D", "IP01-E", "IP01-F", "IP01-G", "IP01-H", "IP01-I",
+            "IX03", "IR02", "Service", "Deck-1", "Deck-2", "Deck-3", "Deck-4", "Deck-5", "Deck-6", 
+            "Deck-7", "IS12-A", "IS12-B", "Extra"
+        ];
+        
+        let selectedRoutesForPrint = [...routeList];
+
+        document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('th-TH', { 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        });
+
+        function switchPage(page, appName = null) {
+            document.getElementById('dashboard-content').classList.add('hidden');
+            document.getElementById('recordFormSection').classList.add('hidden');
+            document.getElementById('extraPageSection').classList.add('hidden');
+            document.getElementById('externalContentSection').classList.add('hidden');
+            
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            if (page === 'dashboard') {
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                document.getElementById('menu-dashboard').classList.add('active');
+            } 
+            else if (page === 'recordForm') {
+                document.getElementById('recordFormSection').classList.remove('hidden');
+                document.getElementById('menu-record').classList.add('active');
+                updateForm();
+            }
+            else if (page === 'extraPage') {
+                document.getElementById('extraPageSection').classList.remove('hidden');
+                document.getElementById('menu-extra').classList.add('active');
+                renderRouteManager();
+                renderRouteSigns();
+            }
+            else if (page === 'external') {
+                const url = APP_LINKS[appName];
+                if (url) {
+                    document.getElementById('externalContentSection').classList.remove('hidden');
+                    document.getElementById('appIframe').src = url;
+                    const titleMap = { 'sealPrint': 'ระบบเอกสารซีลล็อค', 'truckCard': 'ระบบ Truck card', 'expressway': 'ระบบปะหน้าทางด่วน' };
+                    const menuMap = { 'sealPrint': 'menu-seal', 'truckCard': 'menu-truck', 'expressway': 'menu-express' };
+                    document.getElementById('iframeTitle').innerText = titleMap[appName] || 'แอปพลิเคชันภายนอก';
+                    document.getElementById(menuMap[appName]).classList.add('active');
+                }
+            }
+        }
+
+        // --- ระบบป้ายรูทงาน ---
+        
+        function renderRouteManager() {
+            const listEl = document.getElementById('routeManagerList');
+            const printType = document.getElementById('printSelect').value;
+            listEl.innerHTML = '';
+            
+            routeList.forEach((route, index) => {
+                const badge = document.createElement('div');
+                badge.className = "route-item-badge";
+                
+                // Checkbox สำหรับเลือกพิมพ์
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = selectedRoutesForPrint.includes(route);
+                cb.disabled = (printType === 'all');
+                cb.onchange = (e) => {
+                    if(e.target.checked) {
+                        if(!selectedRoutesForPrint.includes(route)) selectedRoutesForPrint.push(route);
+                    } else {
+                        selectedRoutesForPrint = selectedRoutesForPrint.filter(r => r !== route);
+                    }
+                    renderRouteSigns();
+                };
+
+                const span = document.createElement('span');
+                span.innerText = route;
+                
+                const delBtn = document.createElement('button');
+                delBtn.innerHTML = '×';
+                delBtn.className = "text-red-500 hover:text-red-700 font-bold ml-1";
+                delBtn.onclick = () => removeRoute(index);
+                
+                badge.appendChild(cb);
+                badge.appendChild(span);
+                badge.appendChild(delBtn);
+                listEl.appendChild(badge);
+            });
+        }
+
+        function addRoute() {
+            const input = document.getElementById('newRouteInput');
+            if(input.value.trim()) {
+                const val = input.value.trim();
+                routeList.push(val);
+                selectedRoutesForPrint.push(val);
+                input.value = '';
+                renderRouteManager();
+                renderRouteSigns();
+            }
+        }
+
+        function removeRoute(index) {
+            const routeName = routeList[index];
+            // เพิ่มการยืนยันก่อนลบรูทงาน
+            if (window.confirm("คุณต้องการลบรูท '" + routeName + "' ใช่หรือไม่?")) {
+                const removed = routeList.splice(index, 1)[0];
+                selectedRoutesForPrint = selectedRoutesForPrint.filter(r => r !== removed);
+                renderRouteManager();
+                renderRouteSigns();
+            }
+        }
+
+        function renderRouteSigns() {
+            const container = document.getElementById('routePrintContainer');
+            const monthCode = document.getElementById('monthSelect').value;
+            const printType = document.getElementById('printSelect').value;
+            container.innerHTML = '';
+
+            let routesToPrint = (printType === 'all') ? [...routeList] : [...selectedRoutesForPrint];
+            
+            // แบ่งข้อมูลเป็นคู่ (2 รูทต่อ 1 หน้า A4)
+            for (let i = 0; i < routesToPrint.length; i += 2) {
+                const page = document.createElement('div');
+                page.className = "print-area route-print-page";
+                page.style.display = "block";
+                
+                // ป้ายบน
+                page.appendChild(createRouteBox(monthCode, routesToPrint[i]));
+                
+                // ป้ายล่าง (ถ้ามี)
+                if (routesToPrint[i+1]) {
+                    page.appendChild(createRouteBox(monthCode, routesToPrint[i+1]));
+                }
+                
+                container.appendChild(page);
+            }
+            renderRouteManager(); // เพื่อ Update สถานะ Checkbox
+        }
+
+        function createRouteBox(month, routeName) {
+            const box = document.createElement('div');
+            box.className = "route-box";
+            
+            if (routeName.toUpperCase() === 'EXTRA') {
+                // รูปแบบเดิมของ Extra: "Extra" อยู่บน (ใหญ่), "ATH" อยู่ล่าง
+                box.innerHTML = `
+                    <div style="font-size: 200px; font-weight: 900; line-height: 0.8; text-transform: uppercase;">Extra</div>
+                    <div style="font-size: 150px; font-weight: 900; line-height: 0.8; text-transform: uppercase;">ATH</div>
+                `;
+            } else {
+                // รูปแบบใหม่สำหรับป้ายรูทปกติ (ขยายขนาดให้ใหญ่ชัดเจนแต่ไม่ล้น)
+                box.innerHTML = `
+                    <div class="route-month-text">P${month}-ATH</div>
+                    <div class="route-name-text">${routeName}</div>
+                `;
+            }
+            return box;
+        }
+
+        // --- ระบบฟอร์มบันทึกข้อมูล (คงเดิม) ---
+
+        function updateForm() {
+            const route = document.getElementById('routeSelect').value;
+            const titleEl = document.getElementById('formTitle');
+            titleEl.innerText = (route === 'Deck') ? 'บันทึกข้อมูลสินค้า DECK' : 'บันทึกข้อมูลสินค้า Frame & Axle';
+
+            const supporterSection = document.getElementById('supporterSection');
+            const shiftCheckboxes = document.getElementById('shiftCheckboxes');
+            
+            if (route === 'Deck') {
+                supporterSection.innerHTML = `
+                    <div class="mb-1 whitespace-nowrap text-slate-900">Day shift : name: <span class="dotted-line w-44"></span></div>
+                    <div class="whitespace-nowrap text-slate-900">Night shift : name: <span class="dotted-line w-44"></span></div>
+                `;
+                shiftCheckboxes.classList.add('hidden');
+            } else {
+                supporterSection.innerHTML = `
+                    <div class="whitespace-nowrap text-slate-900">Supporter name: <span class="dotted-line w-64"></span></div>
+                `;
+                shiftCheckboxes.classList.remove('hidden');
+            }
+
+            const options = ['S5', 'OBS', 'SW'];
+            options.forEach(opt => {
+                const el = document.getElementById(`opt-${opt}`);
+                const checkbox = el.querySelector('.checkbox-custom');
+                checkbox.innerText = (route === 'Deck' && opt === 'SW') ? '✓' : '';
+                el.style.opacity = (route === 'Frame' && opt !== 'SW') || (route === 'Deck' && opt === 'SW') ? '1' : '0.15';
+            });
+
+            const headers = (route === 'Deck') 
+                ? `<tr><th style="width: 10%">Trip</th><th style="width: 18%">Truck No.</th><th style="width: 18%">In</th><th style="width: 18%">Out</th><th style="width: 36%">Driver</th></tr>`
+                : `<tr><th style="width: 10%">Trip</th><th style="width: 22%">Truck No.</th><th style="width: 17%">In</th><th style="width: 17%">Out</th><th style="width: 34%">Driver</th></tr>`;
+            
+            document.getElementById('leftTableHeader').innerHTML = headers;
+            document.getElementById('rightTableHeader').innerHTML = headers;
+
+            const leftBody = document.getElementById('leftTableBody');
+            const rightBody = document.getElementById('rightTableBody');
+            leftBody.innerHTML = ''; rightBody.innerHTML = '';
+
+            let leftEnd, rightStart, rightEnd;
+            let truckPrefix = (route === 'Frame') ? 'F.....................' : 'D.........';
+
+            if (route === 'Frame') {
+                leftEnd = 35; rightStart = 36; rightEnd = 70;
+            } else {
+                leftEnd = 30; rightStart = 1; rightEnd = 30; 
+            }
+
+            for (let i = 1; i <= leftEnd; i++) leftBody.appendChild(createRow(i, truckPrefix, route));
+            for (let i = rightStart; i <= rightEnd; i++) rightBody.appendChild(createRow(i, truckPrefix, route));
+            
+            const height = (route === 'Frame') ? '26.5px' : '31.1px';
+            document.querySelectorAll('#recordFormSection tbody tr').forEach(r => r.style.height = height);
+        }
+
+        function createRow(tripNo, truck, route) {
+            const tr = document.createElement('tr');
+            if (route === 'Deck') {
+                tr.innerHTML = `<td>${tripNo}</td><td class="text-left px-1 whitespace-nowrap">${truck}</td><td></td><td></td><td></td>`;
+            } else {
+                tr.innerHTML = `<td>${tripNo}</td><td class="text-left px-1 whitespace-nowrap">${truck}</td><td></td><td></td><td></td>`;
+            }
+            return tr;
+        }
+
+        window.onload = function() { switchPage('dashboard'); };
+    </script>
+</body>
+</html>
